@@ -26,7 +26,7 @@
 #define DIM           36
 #define N             6
 
-const int rows[][7] = {
+const int rows[32][7] = {
     { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 },
     { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 },
     {10,11,12,13,14,15,-1 }, {10,11,12,13,14,15,-1 }, {10,11,12,13,14,15,-1 },
@@ -40,7 +40,7 @@ const int rows[][7] = {
     {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 },
     {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 }
 };
-const int cols[][7] = {
+const int cols[32][7] = {
     { 4,10,16,20,24,30,-1 }, { 5,11,17,21,25,31,-1 }, { 6,12, 0, 2,26,32,-1 },
     { 7,13, 1, 3,27,33,-1 }, { 8,14,18,22,28,34,-1 }, { 9,15,19,23,29,35,-1 },
     { 4,10,16,20,24,30,-1 }, { 5,11,17,21,25,31,-1 }, { 6,12, 0, 2,26,32,-1 },
@@ -54,7 +54,7 @@ const int cols[][7] = {
     { 4,10,16,20,24,30,-1 }, { 5,11,17,21,25,31,-1 }, { 6,12, 0, 2,26,32,-1 },
     { 7,13, 1, 3,27,33,-1 }, { 8,14,18,22,28,34,-1 }, { 9,15,19,23,29,35,-1 }
 };
-const int dia1[][7] = {
+const int dia1[32][7] = {
     { 4,11, 0, 3,28,35,-1 }, { 5,12, 1,22,29,-1,-1 }, { 6,13,18,23,-1,-1,-1 },
     { 7,14,19,-1,-1,-1,-1 }, { 8,15,-1,-1,-1,-1,-1 }, { 9,-1,-1,-1,-1,-1,-1 },
     {10,17, 2,27,34,-1,-1 }, { 4,11, 0, 3,28,35,-1 }, { 5,12, 1,22,29,-1,-1 },
@@ -199,7 +199,30 @@ inline bool state_t::outflank(bool color, int pos) const {
     }
 
     // [CHECK OVER DIAGONALS REMOVED]
-    assert(0);
+    // Check diagonals
+    x = dia1[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) return true;
+    }
+    if( x != dia1[pos - 4] ) {
+        for( p = x - 1; (p >= dia1[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia1[pos - 4]) && !is_free(*p) ) return true;
+    }
+
+    x = dia2[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) return true;
+    }
+    if( x != dia2[pos - 4] ) {
+        for( p = x - 1; (p >= dia2[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia2[pos - 4]) && !is_free(*p) ) return true;
+    }
+
+    //assert(0);
 
     return false;
 }
@@ -264,7 +287,37 @@ inline state_t state_t::move(bool color, int pos) const {
     }
 
     // [PROCESS OF DIAGONALS REMOVED]
-
+    // Process diagonals
+    x = dia1[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) {
+            for( const int *q = x + 1; q < p; ++q ) s.set_color(color, *q);
+        }
+    }
+    if( x != dia1[pos - 4] ) {
+        for( p = x - 1; (p >= dia1[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia1[pos - 4]) && !is_free(*p) ) {
+            for( const int *q = x - 1; q > p; --q ) s.set_color(color, *q);
+        }
+    }
+    
+    x = dia2[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) {
+            for( const int *q = x + 1; q < p; ++q ) s.set_color(color, *q);
+        }
+    }
+    if( x != dia2[pos - 4] ) {
+        for( p = x - 1; (p >= dia2[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia2[pos - 4]) && !is_free(*p) ) {
+            for( const int *q = x - 1; q > p; --q ) s.set_color(color, *q);
+        }
+    }
+    
     return s;
 }
 
