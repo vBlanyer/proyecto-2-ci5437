@@ -127,7 +127,7 @@ int main(int argc, const char **argv)
             }
             else if (algorithm == 4)
             {
-                // value = negascout(pv[i], 0, -200, 200, color, use_tt);
+                value = negascout(pv[i], 33, -200, 200, color, use_tt);
             }
         }
         catch (const bad_alloc &e)
@@ -216,6 +216,58 @@ int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_t
     if (not_valid_move) {
         // Si no hay movimientos posibles, pasar el turno al oponente.
         alpha = std::max(alpha, -negamax(state, depth - 1, -beta, -alpha, -color, use_tt));
+    }
+
+    ++expanded;
+    return alpha;
+}
+
+int negascout(state_t state, int depth, int alpha, int beta, int color, bool use_tt) {
+    ++generated;
+
+    if (depth == 0 || state.terminal())
+    {
+        return color * state.value();
+    }
+
+    bool firsChild = true;
+    int score = 0;
+    bool not_valid_move = true;
+    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
+
+    for (int pos = 0; pos < DIM; ++pos)
+    {
+        if (state.outflank(boolean_color, pos))
+        {
+            state_t child = state.move(boolean_color, pos);
+            if (firsChild)
+            {
+                score = -negascout(child, depth - 1, -beta, -alpha, -color, use_tt);
+                firsChild = false;
+            }
+            else
+            {
+                score = -negascout(child, depth - 1, -alpha - 1, -alpha, -color, use_tt);
+                if (alpha < score && score < beta)
+                {
+                    score = -negascout(child, depth - 1, -beta, -score, -color, use_tt);
+                }
+            }
+            if (score >= beta)
+            {
+                return score;
+            }
+            if (score > alpha)
+            {
+                alpha = score;
+            }
+            not_valid_move = false;
+        }
+    }
+
+    if (not_valid_move) {
+        // Si no hay movimientos posibles, pasar el turno al oponente.
+        alpha = std::max(alpha, -negascout(state, depth - 1, -beta, -alpha, -color, use_tt));
     }
 
     ++expanded;
