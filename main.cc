@@ -102,7 +102,7 @@ int main(int argc, const char **argv)
     cout << "Moving along PV:" << endl;
     for (int i = 0; i <= npv; ++i)
     {
-        //cout << pv[i];
+        // cout << pv[i];
         int value = 0;
         TTable[0].clear();
         TTable[1].clear();
@@ -123,7 +123,7 @@ int main(int argc, const char **argv)
             }
             else if (algorithm == 3)
             {
-                // value = scout(pv[i], 0, color, use_tt);
+                value = scout(pv[i], 33, color, use_tt);
             }
             else if (algorithm == 4)
             {
@@ -141,7 +141,6 @@ int main(int argc, const char **argv)
 
         printf("%2d. %s moves: value=%15d, #expanded=%6u, #generated=%6u, seconds=%8.2f, #generated/second=%8.0f\n",
                npv + 1 - i, (color == 1 ? "Black" : "White"), color * value, expanded, generated, elapsed_time, generated / elapsed_time);
-
     }
 
     return 0;
@@ -163,7 +162,7 @@ int negamax(state_t state, int depth, int color, bool use_tt)
     for (int pos = 0; pos < DIM; ++pos)
     {
         if (state.outflank(boolean_color, pos))
-        {   
+        {
             state_t child = state.move(boolean_color, pos);
             int value = -negamax(child, depth - 1, -color, use_tt);
             if (value > alpha)
@@ -174,7 +173,8 @@ int negamax(state_t state, int depth, int color, bool use_tt)
         }
     }
 
-    if (not_valid_move) {
+    if (not_valid_move)
+    {
         // Si no hay movimientos posibles, pasar el turno al oponente.
         alpha = std::max(alpha, -negamax(state, depth - 1, -color, use_tt));
     }
@@ -213,7 +213,8 @@ int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_t
         }
     }
 
-    if (not_valid_move) {
+    if (not_valid_move)
+    {
         // Si no hay movimientos posibles, pasar el turno al oponente.
         alpha = std::max(alpha, -negamax(state, depth - 1, -beta, -alpha, -color, use_tt));
     }
@@ -222,7 +223,8 @@ int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_t
     return alpha;
 }
 
-int negascout(state_t state, int depth, int alpha, int beta, int color, bool use_tt) {
+int negascout(state_t state, int depth, int alpha, int beta, int color, bool use_tt)
+{
     ++generated;
 
     if (depth == 0 || state.terminal())
@@ -265,11 +267,105 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, bool use
         }
     }
 
-    if (not_valid_move) {
+    if (not_valid_move)
+    {
         // Si no hay movimientos posibles, pasar el turno al oponente.
         alpha = std::max(alpha, -negascout(state, depth - 1, -beta, -alpha, -color, use_tt));
     }
 
     ++expanded;
     return alpha;
+}
+
+bool test(state_t state, int depth, int score, int color, bool cond)
+{
+    // cond = 1 -> >
+    // cond = 0 -> >=
+
+    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
+
+    if (depth == 0 || state.terminal())
+    {
+        if (boolean_color)
+        {
+            return (color * state.value() > score);
+        }
+        else
+        {
+            return (color * state.value() >= score);
+        }
+    }
+
+    for (int pos = 0; pos < DIM; ++pos)
+    {
+        if (state.outflank(boolean_color, pos))
+        {
+            state_t child = state.move(boolean_color, pos);
+            if (boolean_color && test(child, depth - 1, score, -color, cond))
+            {
+                return true;
+            }
+            else if (!boolean_color && !test(child, depth - 1, score, -color, cond))
+            {
+                return false;
+            }
+        }
+    }
+    if (boolean_color)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+int scout(state_t state, int depth, int color, bool use_tt)
+{
+    ++generated;
+
+    if (depth == 0 || state.terminal())
+    {
+        return color * state.value();
+    }
+
+    bool firsChild = true;
+    int score = 0;
+    bool not_valid_move = true;
+    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
+
+    for (int pos = 0; pos < DIM; ++pos)
+    {
+        if (state.outflank(boolean_color, pos))
+        {
+            state_t child = state.move(boolean_color, pos);
+            if (firsChild)
+            {
+                score = scout(child, depth - 1, -color, use_tt);
+                firsChild = false;
+            }
+            else
+            {
+                if (boolean_color && test(child, depth - 1, score, -color, 1))
+                {
+                    score = scout(child, depth - 1, -color, use_tt);
+                }
+                else if (!boolean_color && !test(child, depth - 1, score, -color, 0))
+                {
+                    score = scout(child, depth - 1, -color, use_tt);
+                }
+            }
+            not_valid_move = false;
+        }
+    }
+
+    if (not_valid_move)
+    {
+        // Si no hay movimientos posibles, pasar el turno al oponente.
+        score = std::max(score, scout(state, depth - 1, -color, use_tt));
+    }
+
+    ++expanded;
+    return score;
 }
