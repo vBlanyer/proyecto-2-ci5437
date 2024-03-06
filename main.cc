@@ -154,22 +154,30 @@ int negamax(state_t state, int depth, int color, bool use_tt)
         return color * state.value();
     }
 
-    ++expanded;
+    bool not_valid_move = true;
+    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
     int alpha = -INFINITY;
 
     for (int pos = 0; pos < DIM; ++pos)
     {
-        if (state.outflank(color, pos))
+        if (state.outflank(boolean_color, pos))
         {   
-            state_t child = state.move(color, pos);
+            state_t child = state.move(boolean_color, pos);
             int value = -negamax(child, depth - 1, -color, use_tt);
             if (value > alpha)
             {
                 alpha = value;
             }
+            not_valid_move = false;
         }
     }
 
+    if (not_valid_move) {
+        // Si no hay movimientos posibles, pasar el turno al oponente.
+        alpha = std::max(alpha, -negamax(state, depth - 1, -color, use_tt));
+    }
+
+    ++expanded;
     return alpha;
 }
 
