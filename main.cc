@@ -81,8 +81,10 @@ int main(int argc, const char **argv)
     cout << "done!" << endl;
 
     // print principal variation
+#if 0
     for( int i = 0; i <= npv; ++i )
         cout << pv[npv - i];
+#endif
 
     // Print name of algorithm
     cout << "Algorithm: ";
@@ -117,7 +119,7 @@ int main(int argc, const char **argv)
             }
             else if (algorithm == 2)
             {
-                value = negamax(pv[i], 0, -200, 200, color, use_tt);
+                value = negamax(pv[i], 33, -200, 200, color, use_tt);
             }
             else if (algorithm == 3)
             {
@@ -190,20 +192,32 @@ int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_t
         return color * state.value();
     }
 
-    ++expanded;
-    int value = -INFINITY;
+    bool not_valid_move = true;
+    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
 
     for (int pos = 0; pos < DIM; ++pos)
     {
-        state_t child = state.move(color, pos);
-        value = max(value, -negamax(child, depth - 1, -beta, -alpha, -color, use_tt));
-        alpha = max(alpha, value);
-        if (alpha >= beta)
+        if (state.outflank(boolean_color, pos))
         {
-            break;
+            state_t child = state.move(boolean_color, pos);
+            int value = -negamax(child, depth - 1, -beta, -alpha, -color, use_tt);
+            if (value >= beta)
+            {
+                return value;
+            }
+            if (value > alpha)
+            {
+                alpha = value;
+            }
+            not_valid_move = false;
         }
     }
-    return value;
-}
 
-// Hay un error en el codigo por el cual no se esta obtiendo el resultado satisfactorio
+    if (not_valid_move) {
+        // Si no hay movimientos posibles, pasar el turno al oponente.
+        alpha = std::max(alpha, -negamax(state, depth - 1, -beta, -alpha, -color, use_tt));
+    }
+
+    ++expanded;
+    return alpha;
+}
