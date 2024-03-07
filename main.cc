@@ -139,7 +139,7 @@ int main(int argc, const char **argv)
 
         float elapsed_time = Utils::read_time_in_seconds() - start_time;
 
-        printf("%2d. %s moves: value=%15d, #expanded=%6u, #generated=%6u, seconds=%8.2f, #generated/second=%8.0f\n",
+        printf("%2d. %s moves: value=%15d, #expanded=%6u, #generated=%6u, seconds=%f, #generated/second=%8.0f\n",
                npv + 1 - i, (color == 1 ? "Black" : "White"), color * value, expanded, generated, elapsed_time, generated / elapsed_time);
     }
 
