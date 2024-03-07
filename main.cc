@@ -11,7 +11,7 @@
 
 #include <unordered_map>
 
-#define INFINITY 10000000;
+#define INFINITY 10000000
 
 using namespace std;
 
@@ -275,97 +275,4 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, bool use
 
     ++expanded;
     return alpha;
-}
-
-bool test(state_t state, int depth, int score, int color, bool cond)
-{
-    // cond = 1 -> >
-    // cond = 0 -> >=
-
-    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
-
-    if (depth == 0 || state.terminal())
-    {
-        if (boolean_color)
-        {
-            return (color * state.value() > score);
-        }
-        else
-        {
-            return (color * state.value() >= score);
-        }
-    }
-
-    for (int pos = 0; pos < DIM; ++pos)
-    {
-        if (state.outflank(boolean_color, pos))
-        {
-            state_t child = state.move(boolean_color, pos);
-            if (boolean_color && test(child, depth - 1, score, -color, cond))
-            {
-                return true;
-            }
-            else if (!boolean_color && !test(child, depth - 1, score, -color, cond))
-            {
-                return false;
-            }
-        }
-    }
-    if (boolean_color)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
-}
-
-int scout(state_t state, int depth, int color, bool use_tt)
-{
-    ++generated;
-
-    if (depth == 0 || state.terminal())
-    {
-        return color * state.value();
-    }
-
-    bool firsChild = true;
-    int score = 0;
-    bool not_valid_move = true;
-    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
-
-    for (int pos = 0; pos < DIM; ++pos)
-    {
-        if (state.outflank(boolean_color, pos))
-        {
-            state_t child = state.move(boolean_color, pos);
-            if (firsChild)
-            {
-                score = scout(child, depth - 1, -color, use_tt);
-                firsChild = false;
-            }
-            else
-            {
-                if (boolean_color && test(child, depth - 1, score, -color, 1))
-                {
-                    score = scout(child, depth - 1, -color, use_tt);
-                }
-                else if (!boolean_color && !test(child, depth - 1, score, -color, 0))
-                {
-                    score = scout(child, depth - 1, -color, use_tt);
-                }
-            }
-            not_valid_move = false;
-        }
-    }
-
-    if (not_valid_move)
-    {
-        // Si no hay movimientos posibles, pasar el turno al oponente.
-        score = std::max(score, scout(state, depth - 1, -color, use_tt));
-    }
-
-    ++expanded;
-    return score;
 }
