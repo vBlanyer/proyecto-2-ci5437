@@ -276,3 +276,64 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, bool use
     ++expanded;
     return alpha;
 }
+
+
+bool TEST(state_t state, int depth, int alpha, int color) {
+    ++generated;
+    
+    if (depth == 0 || state.terminal()) {
+        return color * state.value() > alpha;
+    }
+
+    bool boolean_color = color == 1;
+    ++expanded;
+    
+    for (int pos = 0; pos < DIM; ++pos) {
+
+        if (state.outflank(boolean_color, pos)) {  
+            state_t child = state.move(boolean_color, pos);
+
+            int score = -scout(child, depth - 1, -color, false); 
+            
+            if (score > alpha) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+int scout(state_t state, int depth, int color, bool use_tt) {
+    ++generated;
+
+    if (depth == 0 || state.terminal()) {
+        return color * state.value();
+    }
+
+    
+
+    int alpha = std::numeric_limits<int>::min();
+    bool firstChild = true;
+    bool boolean_color = color == 1;
+
+    for (int pos = 0; pos < DIM; ++pos) {
+        if (state.outflank(boolean_color, pos)) {
+            state_t child = state.move(boolean_color, pos);
+            int score;
+            if (firstChild) {
+                score = -scout(child, depth - 1, -color, use_tt);
+                firstChild = false;
+            } else {
+                if (TEST(child, depth - 1, alpha, color)) {
+                    score = -scout(child, depth - 1, -color, use_tt);
+                } else {
+                    continue;
+                }
+            }
+            alpha = std::max(alpha, score);
+        }
+    }
+
+    ++expanded;
+    return alpha;
+}
