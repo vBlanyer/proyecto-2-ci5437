@@ -116,6 +116,7 @@ int main(int argc, const char **argv)
             if (algorithm == 1)
             {
                 value = negamax(pv[i], 33, color, use_tt);
+                // el segundo parametro es la profundidad maxima, colocamos 33 porque el maximo de profundidad es 32
             }
             else if (algorithm == 2)
             {
@@ -277,63 +278,95 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, bool use
     return alpha;
 }
 
+bool test(state_t state, int depth, int score, int color, bool cond)
+{
+    // cond = 1 -> >
+    // cond = 0 -> >=
 
-bool TEST(state_t state, int depth, int alpha, int color) {
-    ++generated;
-    
-    if (depth == 0 || state.terminal()) {
-        return color * state.value() > alpha;
+    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
+
+    if (depth == 0 || state.terminal())
+    {
+        if (boolean_color)
+        {
+            return (color * state.value() > score);
+        }
+        else
+        {
+            return (color * state.value() >= score);
+        }
     }
 
-    bool boolean_color = color == 1;
-    ++expanded;
-    
-    for (int pos = 0; pos < DIM; ++pos) {
-
-        if (state.outflank(boolean_color, pos)) {  
+    for (int pos = 0; pos < DIM; ++pos)
+    {
+        if (state.outflank(boolean_color, pos))
+        {
             state_t child = state.move(boolean_color, pos);
-
-            int score = -scout(child, depth - 1, -color, false); 
-            
-            if (score > alpha) {
+            if (boolean_color && test(child, depth - 1, score, -color, cond))
+            {
                 return true;
+            }
+            else if (!boolean_color && !test(child, depth - 1, score, -color, cond))
+            {
+                return false;
             }
         }
     }
-    return false;
+    if (boolean_color)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
 
-int scout(state_t state, int depth, int color, bool use_tt) {
+int scout(state_t state, int depth, int color, bool use_tt)
+{
     ++generated;
 
-    if (depth == 0 || state.terminal()) {
+    if (depth == 0 || state.terminal())
+    {
         return color * state.value();
     }
 
-    
+    bool firsChild = true;
+    int score = 0;
+    bool not_valid_move = true;
+    bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
 
-    int alpha = std::numeric_limits<int>::min();
-    bool firstChild = true;
-    bool boolean_color = color == 1;
-
-    for (int pos = 0; pos < DIM; ++pos) {
-        if (state.outflank(boolean_color, pos)) {
+    for (int pos = 0; pos < DIM; ++pos)
+    {
+        if (state.outflank(boolean_color, pos))
+        {
             state_t child = state.move(boolean_color, pos);
-            int score;
-            if (firstChild) {
-                score = -scout(child, depth - 1, -color, use_tt);
-                firstChild = false;
-            } else {
-                if (TEST(child, depth - 1, alpha, color)) {
-                    score = -scout(child, depth - 1, -color, use_tt);
-                } else {
-                    continue;
+            if (firsChild)
+            {
+                score = scout(child, depth - 1, -color, use_tt);
+                firsChild = false;
+            }
+            else
+            {
+                if (boolean_color && test(child, depth - 1, score, -color, 1))
+                {
+                    score = scout(child, depth - 1, -color, use_tt);
+                }
+                else if (!boolean_color && !test(child, depth - 1, score, -color, 0))
+                {
+                    score = scout(child, depth - 1, -color, use_tt);
                 }
             }
-            alpha = std::max(alpha, score);
+            not_valid_move = false;
         }
     }
 
+    if (not_valid_move)
+    {
+        // Si no hay movimientos posibles, pasar el turno al oponente.
+        score = std::max(score, scout(state, depth - 1, -color, use_tt));
+    }
+
     ++expanded;
-    return alpha;
+    return score;
 }
