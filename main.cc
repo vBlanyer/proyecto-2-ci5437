@@ -376,3 +376,4 @@ int scout(state_t state, int depth, int color, bool use_tt)
     ++expanded;
     return score;
 }
+//
