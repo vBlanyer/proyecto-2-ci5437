@@ -277,21 +277,18 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, bool use
     return alpha;
 }
 
-bool test(state_t state, int depth, int score, int color, bool cond)
+bool test(state_t state, int depth, int score, int color, string cond)
 {
-    // cond = 1 -> >
-    // cond = 0 -> >=
-
     ++generated;
     bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
 
     if (depth == 0 || state.terminal())
     {
-        if (cond == 1)
+        if (cond == ">")
         {
             return state.value() > score;
         }
-        else
+        else if (cond == ">=")
         {
             return state.value() >= score;
         }
@@ -356,11 +353,11 @@ int scout(state_t state, int depth, int color, bool use_tt)
             }
             else
             {
-                if (boolean_color && test(child, depth - 1, score, -color, 1))
+                if (boolean_color && test(child, depth - 1, score, -color, ">"))
                 {
                     score = scout(child, depth - 1, -color, use_tt);
                 }
-                else if (!boolean_color && !test(child, depth - 1, score, -color, 0))
+                else if (!boolean_color && !test(child, depth - 1, score, -color, ">="))
                 {
                     score = scout(child, depth - 1, -color, use_tt);
                 }
