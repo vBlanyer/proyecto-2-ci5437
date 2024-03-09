@@ -116,7 +116,6 @@ int main(int argc, const char **argv)
             if (algorithm == 1)
             {
                 value = negamax(pv[i], 33, color, use_tt);
-                // el segundo parametro es la profundidad maxima, colocamos 33 porque el maximo de profundidad es 32
             }
             else if (algorithm == 2)
             {
@@ -283,24 +282,28 @@ bool test(state_t state, int depth, int score, int color, bool cond)
     // cond = 1 -> >
     // cond = 0 -> >=
 
+    ++generated;
     bool boolean_color = color == 1; // Convertir color a booleano para su uso con outflank
 
     if (depth == 0 || state.terminal())
     {
-        if (boolean_color)
+        if (cond == 1)
         {
-            return (color * state.value() > score);
+            return state.value() > score;
         }
         else
         {
-            return (color * state.value() >= score);
+            return state.value() >= score;
         }
     }
 
+    ++expanded;
+    bool not_valid_move = true;
     for (int pos = 0; pos < DIM; ++pos)
     {
         if (state.outflank(boolean_color, pos))
         {
+            not_valid_move = false;
             state_t child = state.move(boolean_color, pos);
             if (boolean_color && test(child, depth - 1, score, -color, cond))
             {
@@ -312,14 +315,19 @@ bool test(state_t state, int depth, int score, int color, bool cond)
             }
         }
     }
-    if (boolean_color)
+
+    if (not_valid_move)
     {
-        return false;
+        if (boolean_color && test(state, depth, score, -color, cond))
+        {
+            return true;
+        }
+        else if (!boolean_color && !test(state, depth, score, -color, cond))
+        {
+            return false;
+        }
     }
-    else
-    {
-        return true;
-    }
+    return !boolean_color;
 }
 
 int scout(state_t state, int depth, int color, bool use_tt)
@@ -328,7 +336,7 @@ int scout(state_t state, int depth, int color, bool use_tt)
 
     if (depth == 0 || state.terminal())
     {
-        return color * state.value();
+        return state.value();
     }
 
     bool firsChild = true;
@@ -363,8 +371,9 @@ int scout(state_t state, int depth, int color, bool use_tt)
 
     if (not_valid_move)
     {
+        ++generated;
         // Si no hay movimientos posibles, pasar el turno al oponente.
-        score = std::max(score, scout(state, depth - 1, -color, use_tt));
+        score = scout(state, depth, -color, use_tt);
     }
 
     ++expanded;
